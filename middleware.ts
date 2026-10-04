@@ -10,7 +10,9 @@ const isPublicRoute = createRouteMatcher([
 
 const clerkHandler = clerkMiddleware(async (auth, request) => {
   if (!isPublicRoute(request)) {
-    await auth.protect()
+    // Send signed-out visitors to this app's own sign-in page (the Vercel
+    // NEXT_PUBLIC_CLERK_SIGN_IN_URL points at an old development instance).
+    await auth.protect({ unauthenticatedUrl: new URL('/sign-in', request.url).toString() })
   }
 })
 

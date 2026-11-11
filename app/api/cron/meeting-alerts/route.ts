@@ -1,7 +1,8 @@
-﻿import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase'
+import { verifyCronAuth } from '@/lib/cron-auth'
 
-// Vercel Cron: runs every 15 minutes (see vercel.json)
+// Triggered every 15 minutes by .github/workflows/meeting-alerts.yml (or Vercel Cron on a Pro plan).
 // Checks for meetings starting in ~10 min and ~30 min, sends Discord alerts.
 // Secured via CRON_SECRET env var.
 
@@ -123,10 +124,12 @@ async function sendDiscordAlert(
 }
 
 export async function GET(req: NextRequest) {
-  // Verify cron secret
-  const authHeader = req.headers.get('authorization')
-  const cronSecret = process.env.CRON_SECRET
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+  // Verify cron secret (fails closed when CRON_SECRET is not configured)
+  const cronAuth = verifyCronAuth(req.headers.get('authorization'), process.env.CRON_SECRET)
+  if (cronAuth === 'unconfigured') {
+    return NextResponse.json({ error: 'CRON_SECRET is not configured' }, { status: 503 })
+  }
+  if (cronAuth !== 'ok') {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

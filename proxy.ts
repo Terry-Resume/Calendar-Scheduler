@@ -6,6 +6,8 @@ const isPublicRoute = createRouteMatcher([
   '/',
   '/sign-in(.*)',
   '/sign-up(.*)',
+  '/api/health', // uptime probe for the Central Command hub; reveals no data
+  '/api/cron/(.*)', // authenticated by CRON_SECRET inside the route, not by a Clerk session
 ])
 
 const clerkHandler = clerkMiddleware(async (auth, request) => {
@@ -16,11 +18,12 @@ const clerkHandler = clerkMiddleware(async (auth, request) => {
   }
 })
 
-export async function middleware(req: NextRequest, evt: NextFetchEvent) {
+// Next.js 16 renamed middleware.ts to proxy.ts.
+export async function proxy(req: NextRequest, evt: NextFetchEvent) {
   try {
     return await clerkHandler(req, evt)
   } catch (error) {
-    console.error('[middleware] Clerk error:', error)
+    console.error('[proxy] Clerk error:', error)
     if (!isPublicRoute(req)) {
       return NextResponse.redirect(new URL('/sign-in', req.url))
     }

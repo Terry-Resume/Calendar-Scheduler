@@ -1,5 +1,6 @@
-﻿import { auth } from '@clerk/nextjs/server'
+import { auth } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
+import { signState } from '@/lib/oauth-state'
 
 export async function GET() {
   const { userId } = await auth()
@@ -10,6 +11,9 @@ export async function GET() {
   if (!clientId || !appUrl) {
     return NextResponse.json({ error: 'Google OAuth not configured' }, { status: 503 })
   }
+
+  const stateSecret = process.env.OAUTH_STATE_SECRET ?? process.env.CLERK_SECRET_KEY
+  if (!stateSecret) return NextResponse.json({ error: 'OAuth state secret is not configured' }, { status: 503 })
 
   const redirectUri = `${appUrl}/api/auth/google/callback`
   const scope = [
@@ -24,7 +28,7 @@ export async function GET() {
   url.searchParams.set('scope', scope)
   url.searchParams.set('access_type', 'offline')
   url.searchParams.set('prompt', 'consent')
-  url.searchParams.set('state', userId)
+  url.searchParams.set('state', signState(userId, stateSecret))
 
   return NextResponse.redirect(url.toString())
 }

@@ -1,0 +1,20 @@
+name: Meeting alerts
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+permissions: {}
+jobs:
+  alerts:
+    runs-on: ubuntu-latest
+    # Skips quietly until CRON_APP_URL (repository variable) and CRON_SECRET (secret) are set.
+    env:
+      APP_URL: ${{ vars.CRON_APP_URL }}
+      CRON_SECRET: ${{ secrets.CRON_SECRET }}
+    steps:
+      - name: Call the alerts endpoint
+        if: ${{ env.APP_URL != '' && env.CRON_SECRET != '' }}
+        run: |
+          curl --fail --silent --show-error --max-time 60 \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            "${APP_URL%/}/api/cron/meeting-alerts"

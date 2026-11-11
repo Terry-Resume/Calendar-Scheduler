@@ -1,9 +1,6 @@
 import type { NextConfig } from 'next'
 
-const nextConfig: NextConfig = {
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-}
+// Type errors fail the build (they used to be silenced with ignoreBuildErrors).
+const nextConfig: NextConfig = {}
 
 export default nextConfig
